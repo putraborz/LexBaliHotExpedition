@@ -1,4 +1,4 @@
--- LEXHOST Cinematic Verified FX (Final: blur on verify start, cinematic ~4s)
+-- LEXHOST Loader (FINAL) - Blur halus saat verifikasi + Cinematic Verified FX (tidak merubah logika verifikasi)
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
@@ -8,7 +8,7 @@ local Lighting = game:GetService("Lighting")
 local player = Players.LocalPlayer
 local cam = workspace.CurrentCamera
 
--- URL (sesuaikan jika perlu)
+-- URLs (tetap pakai cara verifikasi lama)
 local urlVip = "https://raw.githubusercontent.com/putraborz/VerifikasiScWata/refs/heads/main/Loader/vip.txt"
 local urlSatuan = "https://raw.githubusercontent.com/putraborz/VerifikasiScWata/refs/heads/main/Loader/15.txt"
 
@@ -17,6 +17,7 @@ local successUrls = {
     "https://raw.githubusercontent.com/putraborz/WataXMountSalvatore/main/Loader/mainmap2.lua"
 }
 
+-- fetch + isVerified: tetap sama (tidak diubah)
 local function fetch(url)
     local ok, res = pcall(function()
         return game:HttpGet(url, true)
@@ -56,7 +57,7 @@ local function notify(title, text, duration)
     end
 end
 
--- MAIN GUI LOADER
+-- MAIN GUI LOADER (LEXHOSTLoader)
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
 gui.Name = "LEXHOSTLoader"
 gui.ResetOnSpawn = false
@@ -66,15 +67,20 @@ frame.Size = UDim2.new(0, 320, 0, 200)
 frame.Position = UDim2.new(0.5, -160, 0.5, -100)
 frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 frame.BorderSizePixel = 0
-frame.BackgroundTransparency = 0
+frame.BackgroundTransparency = 1 -- start transparent for fade-in
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 local stroke = Instance.new("UIStroke", frame)
 stroke.Thickness = 2
+stroke.Color = Color3.fromRGB(255,255,255)
+
+-- Fade-in GUI utama (smooth)
+TweenService:Create(frame, TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundTransparency = 0}):Play()
 
 -- RGB border anim (loader)
 task.spawn(function()
     while frame.Parent do
         for hue = 0, 255 do
+            if not frame.Parent then break end
             stroke.Color = Color3.fromHSV(hue/255, 1, 1)
             task.wait(0.02)
         end
@@ -89,6 +95,8 @@ unameLabel.Font = Enum.Font.GothamBold
 unameLabel.TextSize = 20
 unameLabel.TextColor3 = Color3.fromRGB(255,255,255)
 unameLabel.Text = player.Name
+unameLabel.TextTransparency = 1
+TweenService:Create(unameLabel, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
 
 local status = Instance.new("TextLabel", frame)
 status.Position = UDim2.new(0, 20, 0, 120)
@@ -98,6 +106,8 @@ status.Font = Enum.Font.Gotham
 status.TextSize = 14
 status.TextColor3 = Color3.fromRGB(255,255,255)
 status.Text = "Klik tombol verifikasi untuk lanjut..."
+status.TextTransparency = 1
+TweenService:Create(status, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
 
 local verifyBtn = Instance.new("TextButton", frame)
 verifyBtn.Size = UDim2.new(0.6, 0, 0, 36)
@@ -108,6 +118,8 @@ verifyBtn.TextSize = 16
 verifyBtn.TextColor3 = Color3.fromRGB(255,255,255)
 verifyBtn.BackgroundColor3 = Color3.fromRGB(60, 180, 100)
 Instance.new("UICorner", verifyBtn).CornerRadius = UDim.new(0, 8)
+verifyBtn.TextTransparency = 1
+TweenService:Create(verifyBtn, TweenInfo.new(0.55, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
 
 -- small pulse (getar)
 local function pulse(obj, amt, times)
@@ -122,16 +134,16 @@ local function pulse(obj, amt, times)
     end
 end
 
--- CINEMATIC FX (durasi ~4s)
+-- CINEMATIC FX (durasi ~4s), menggunakan blurSize = 8 saat verifikasi mulai
 local function playCinematicFX()
-    -- Blur (keadaan sudah blur ringan oleh doVerify, tapi pastikan ada)
+    -- ensure blur exists and is at intended value (kept even after doVerify sets Size = 8)
     local blur = Lighting:FindFirstChild("LEXHOST_Blur")
     if not blur then
         blur = Instance.new("BlurEffect")
         blur.Name = "LEXHOST_Blur"
         blur.Size = 0
         blur.Parent = Lighting
-        TweenService:Create(blur, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = 12}):Play()
+        TweenService:Create(blur, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = 8}):Play()
     end
 
     -- Part + ParticleEmitter di depan kamera
@@ -147,17 +159,16 @@ local function playCinematicFX()
 
     local emitter = Instance.new("ParticleEmitter", part)
     emitter.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-    emitter.Rate = 70
-    emitter.Lifetime = NumberRange.new(1.0, 2.6)
-    emitter.Speed = NumberRange.new(1.2, 4.2)
+    emitter.Rate = 80
+    emitter.Lifetime = NumberRange.new(0.9, 2.4)
+    emitter.Speed = NumberRange.new(0.8, 3.4)
     emitter.Rotation = NumberRange.new(0, 360)
     emitter.RotSpeed = NumberRange.new(-90, 90)
-    emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0.95)})
+    emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.42), NumberSequenceKeypoint.new(1, 0.88)})
     emitter.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0, 0.06), NumberSequenceKeypoint.new(1, 1)})
     emitter.LightEmission = 0.85
     emitter.LockedToPart = true
     emitter.VelocitySpread = 180
-    emitter.Speed = NumberRange.new(0.8, 3.5)
     emitter.Color = ColorSequence.new{
         ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 80, 255)),
         ColorSequenceKeypoint.new(0.45, Color3.fromRGB(80, 200, 255)),
@@ -177,6 +188,7 @@ local function playCinematicFX()
     textHolder.AnchorPoint = Vector2.new(0.5, 0.5)
     textHolder.Position = UDim2.new(0.5, 0, 0.5, 0)
     textHolder.BackgroundTransparency = 1
+    textHolder.Size = UDim2.new(0.12, 0, 0, 60)
 
     local bigText = Instance.new("TextLabel", textHolder)
     bigText.Size = UDim2.new(1, 0, 1, 0)
@@ -192,8 +204,7 @@ local function playCinematicFX()
     bigText.TextScaled = true
     bigText.TextWrapped = true
 
-    -- initial small scale
-    textHolder.Size = UDim2.new(0.12, 0, 0, 60)
+    -- animate entry
     TweenService:Create(textHolder, TweenInfo.new(0.8, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {Size = UDim2.new(0.7, 0, 0, 160)}):Play()
     TweenService:Create(bigText, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
 
@@ -221,7 +232,7 @@ local function playCinematicFX()
     TweenService:Create(textHolder, TweenInfo.new(0.9, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = UDim2.new(0.05,0,0,40)}):Play()
     TweenService:Create(blur, TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = 0}):Play()
 
-    -- cleanup
+    -- cleanup with slight delay
     task.delay(1, function()
         if verifiedGui and verifiedGui.Parent then verifiedGui:Destroy() end
         if blur and blur.Parent then blur:Destroy() end
@@ -230,12 +241,12 @@ local function playCinematicFX()
     end)
 end
 
--- doVerify: blur appears immediately (ringan), then verifikasi dilakukan
+-- doVerify: blur appears immediately (halus, Size = 8)
 local function doVerify()
     status.Text = "Memeriksa..."
     verifyBtn.Active = false
 
-    -- create or tween blur to ringan (halus)
+    -- create or reuse blur, tween to halus = 8
     local blur = Lighting:FindFirstChild("LEXHOST_Blur")
     if not blur then
         blur = Instance.new("BlurEffect")
@@ -243,8 +254,7 @@ local function doVerify()
         blur.Size = 0
         blur.Parent = Lighting
     end
-    -- tween to soft value (ringan elegan)
-    TweenService:Create(blur, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = 12}):Play()
+    TweenService:Create(blur, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = 8}):Play()
 
     local ok, result = pcall(function()
         return isVerified(player.Name)
@@ -256,7 +266,6 @@ local function doVerify()
         status.Text = "⚠️ Error saat verifikasi."
         notify("LEXHOST", "Gagal memeriksa daftar (error).", 4)
         pulse(frame, 6, 3)
-        -- hilangkan blur perlahan
         TweenService:Create(blur, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = 0}):Play()
         task.delay(0.6, function() if blur and blur.Parent then blur:Destroy() end end)
         return
@@ -274,10 +283,10 @@ local function doVerify()
         task.wait(0.55)
         if frame and frame.Parent then frame.Visible = false end
 
-        -- play cinematic (ke blur tetap ada)
+        -- play cinematic (blur tetap ada)
         playCinematicFX()
 
-        -- load success scripts after cinematic (agar sinematik terasa)
+        -- load success scripts after cinematic
         for _,url in ipairs(successUrls) do
             local ok2, err = pcall(function()
                 loadstring(game:HttpGet(url))()
@@ -297,7 +306,7 @@ local function doVerify()
             end
         end)
         notify("LEXHOST", "❌ Kamu belum terdaftar untuk menggunakan fitur ini.", 4)
-        -- hilangkan blur perlahan
+        -- hilangkan blur halus
         TweenService:Create(blur, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {Size = 0}):Play()
         task.delay(0.7, function() if blur and blur.Parent then blur:Destroy() end end)
     end
