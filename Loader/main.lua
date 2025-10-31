@@ -1,8 +1,10 @@
--- ===== LEXHOST Loader - Full Final Original Verification =====
+-- ===== LEXHOST Loader - Modern GUI + Original Verification =====
 local Players = game:GetService("Players")
 local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
+local Debris = game:GetService("Debris")
 local player = Players.LocalPlayer
 local cam = workspace.CurrentCamera
 
@@ -140,15 +142,41 @@ verifyBtn.BackgroundColor3 = Color3.fromRGB(60, 170, 100)
 Instance.new("UICorner", verifyBtn).CornerRadius = UDim.new(0,8)
 
 -- ===== Verifikasi =====
-local function doVerify()
-    status.Text = "Memeriksa..."
-    verifyBtn.Active = false
-
-    -- Blur effect
+local function showValidEffect()
     local blur = Lighting:FindFirstChild("LEXHOST_Blur") or Instance.new("BlurEffect", Lighting)
     blur.Name = "LEXHOST_Blur"
     blur.Size = 0
     TweenService:Create(blur, TweenInfo.new(0.3), {Size=8}):Play()
+
+    local part = Instance.new("Part")
+    part.Size = Vector3.new(1,1,1)
+    part.Anchored = true
+    part.CanCollide = false
+    part.Transparency = 1
+    part.CFrame = cam.CFrame * CFrame.new(0,0,-6)
+    part.Parent = workspace
+    Debris:AddItem(part,6)
+
+    local emitter = Instance.new("ParticleEmitter", part)
+    emitter.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+    emitter.Rate = 90
+    emitter.Lifetime = NumberRange.new(0.9,2.2)
+    emitter.Speed = NumberRange.new(0.8,3)
+    emitter.Size = NumberSequence.new({NumberSequenceKeypoint.new(0,0.4), NumberSequenceKeypoint.new(1,0.9)})
+    emitter.Transparency = NumberSequence.new({NumberSequenceKeypoint.new(0,0.06), NumberSequenceKeypoint.new(1,1)})
+    emitter.Color = ColorSequence.new{Color3.fromRGB(120,80,255), Color3.fromRGB(80,200,255), Color3.fromRGB(255,160,80)}
+    emitter.Enabled = true
+
+    task.delay(3, function()
+        if part then part:Destroy() end
+        if emitter then emitter:Destroy() end
+        if blur then TweenService:Create(blur,TweenInfo.new(0.5),{Size=0}):Play() task.delay(0.6,function() if blur.Parent then blur:Destroy() end end end
+    end)
+end
+
+local function doVerify()
+    status.Text = "Memeriksa..."
+    verifyBtn.Active = false
 
     local ok,result = pcall(function() return isVerified(player.Name) end)
     verifyBtn.Active = true
@@ -156,13 +184,13 @@ local function doVerify()
     if not ok then
         status.Text = "⚠️ Error saat verifikasi."
         notify("LEXHOST","Gagal memeriksa daftar (error).",4)
-        blur:Destroy()
         return
     end
 
     if result then
         status.Text = "✅ KAMU TERDAFTAR SEBAGAI PENGGUNA"
         _G.WataX_Replay = true
+        showValidEffect()
 
         -- Load success scripts
         task.spawn(function()
@@ -180,8 +208,6 @@ local function doVerify()
         status.Text = "❌ KAMU TIDAK TERDAFTAR"
         _G.WataX_Replay = false
         notify("LEXHOST","Kamu belum terdaftar untuk menggunakan fitur ini.",4)
-        task.delay(1, function() TweenService:Create(blur, TweenInfo.new(0.3), {Size=0}):Play() end)
-        task.delay(1.3, function() if blur and blur.Parent then blur:Destroy() end end)
     end
 end
 
